@@ -4,7 +4,6 @@
  * @param {array}   ar   Array of integers representing color code of sock ar[i]
  * @return {integer} Total number of pairs of integers found in ar
  */
-
 function sockMerchant(n, ar) {
     let pairs = 0;
     while (ar.length != 0) {
@@ -32,7 +31,6 @@ function sockMerchant(n, ar) {
  * @param {array}   s  Array of characters, assumed to consist only of 'U' and 'D'
  * @return {integer} The number of valleys
  */
-
  function countingValleys(n, s) {
     let valleys = 0;
     let height = 0;
@@ -54,7 +52,6 @@ function sockMerchant(n, ar) {
  * @param {array} c 
  * @return {integer} Minimum number of jumps
  */
-
 function jumpingOnClouds(c) {
     console.log(c);
     if (c.length === 1) return 0;
@@ -78,7 +75,6 @@ function jumpingOnClouds(c) {
  * @param {string}  s  A string to repeat
  * @param {integer} n  The number of characters of the repeated string
  */
-
 function repeatedString(s, n) {
 
     const r   = n % s.length;
