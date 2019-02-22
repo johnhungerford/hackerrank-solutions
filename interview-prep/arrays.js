@@ -46,7 +46,14 @@ function rotLeft(a, d) {
     return a;
 }
 
-
+/**
+ * Calculate the minimum number of "bribes" needed to get a group of people
+ * in a line, numbered by consecutive integers beginning with 1, into a different,
+ * given, order. Any person in the line can give a bribe to the person directly in
+ * front of him to switch places, but can only do so twice. Writes either the min
+ * number of bribes, or "Too chaotic" if no bribes will work, to stdout.
+ * @param {array} q Array of integers in some "chaotic" order
+ */
 function minimumBribes(q) {
 
 	let outval = 0;
@@ -64,6 +71,13 @@ function minimumBribes(q) {
 
 }
 
+/**
+ * Calculates the minimum number of swaps needed to get a jumbled
+ * array of integers (from 1 to N, consequetive) into ascending order,
+ * where a swap can be between any two elements in the array
+ * @param {array} arr Array of jumbled integers
+ * @return {integer} minimum number of swaps
+ */
 function minimumSwaps(arr) {
 	const visited = [];
 	const map = {};
@@ -89,4 +103,33 @@ function minimumSwaps(arr) {
 	}
 
 	return numswaps;
+}
+
+/**
+ * Finds the highest value in an array of zeros that has been added according
+ * to rules encoded in a 2D array, each of which includes the starting element to sum,
+ * the last element to sum, and the amount to sum (i.e., add a given sum to all
+ * elements between a given starting index and a given ending index). The challenge
+ * is doing so for very a very large array of zeros and very long array of sum rules.
+ * @param {integer} n        Number of elements in the array to be summed
+ * @param {array}   queries  Array containing rules, each of which is an array of length 3
+ * @return {integer} Maximum value in the summed array, after all rules applied.
+ */
+function arrayManipulation(n, queries) {
+    let arr = [];
+    for (let i = 0; i < n; i++) arr.push(0);
+
+    for (let i = 0; i < queries.length; i++) {
+        arr[queries[i][0] - 1] += queries[i][2];
+        if (queries[i][1] < n) arr[queries[i][1]] -= queries[i][2];
+    }
+
+    let maxval = 0;
+    let x = 0;
+    for (let i = 0; i < arr.length; i++) {
+        x += arr[i];
+        if (x > maxval) maxval = x;
+    }
+
+    return maxval;
 }
