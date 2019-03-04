@@ -106,10 +106,9 @@ function minimumSwaps(arr) {
 }
 
 /**
- * Finds the highest value in an array of zeros that has been added according
- * to rules encoded in a 2D array, each of which includes the starting element to sum,
- * the last element to sum, and the amount to sum (i.e., add a given sum to all
- * elements between a given starting index and a given ending index). The challenge
+ * Finds the highest value in an array of zeros that have been incremented according
+ * to rules encoded in a 2D array, each of which includes the starting element to increment,
+ * the last element to increment, and the amount to increment by. The challenge
  * is doing so for very a very large array of zeros and very long array of sum rules.
  * @param {integer} n        Number of elements in the array to be summed
  * @param {array}   queries  Array containing rules, each of which is an array of length 3
