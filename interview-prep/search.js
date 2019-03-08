@@ -335,3 +335,78 @@ function triplets(a, b, c) {
         return arr;
     }
 }
+
+function minTime(machines, goal) {
+    let map = {};
+    for (let i = 0; i < machines.length; i++)
+        map[machines[i]] = map.hasOwnProperty(machines[i]) ? map[machines[i]] + 1 : 1; 
+
+    let amap = [];
+    for (let k in map) amap.push([k, map[k]]);
+    amap = sort(amap);
+    let max = goal * amap[0][0] * amap[0][1];
+    for (let i = amap.length - 1; i < 0; i--) {
+        if (amap[i][0] >= max) {
+            amap.pop();
+        } else {
+            break;
+        }
+    }
+    
+    let d = binarySearch(goal, 1, max, getProducts);
+    return d;
+    function getProducts(x) {
+        let p = 0;
+        for (let i in amap) p += amap[i][1] * Math.floor(x / parseInt(amap[i][0]));
+        return p;
+    }
+
+    /**
+     * This version of binarySearch searches for the lowest integer input of a function that
+     * will result in or exceed a given value. Only works if fn's slope is always positive or zero.
+     * @param {integer}  n   The value of fn being searched for
+     * @param {integer}  lo  The lowest integer input of fn to consider
+     * @param {integer}  hi  The highest integer input of fn to consider
+     * @param {function} fn  A function
+     * @returns {integer}  The smallest integer i such that fn(i) >= n
+     */
+    function binarySearch(n, lo, hi, fn) {
+        let lov = fn(lo);
+        let hiv = fn(hi);
+        if (lov >= n) return lo;
+        if (hiv === n) if (fn(hi - 1) != hiv) return hi;
+        if (hiv < n) return null;
+        if (hi - lo === 1) return hi;
+        let mi = Math.floor((lo + hi) / 2);
+        let miv = fn(mi);
+        return miv < n ? binarySearch(n, mi, hi, fn) : binarySearch(n, lo, mi, fn);
+    }
+
+    function sort(arr) {
+        if (arr.length === 1) return arr;
+        let n, a;
+        for (n = 0, a = 1; a < arr.length; a = 2 * a, n += 1);
+        for (let i = 0, j = 1; i <= n; i++ , j = 2 * j) {
+            for (let k = 0; k + j < arr.length; k += 2 * j) {
+                const a = [];
+                let iLo = 0, iHi = k + j;
+                for (let l = k; l < k + 2 * j && l < arr.length; l++) {
+                    let loval = iLo >= a.length ? arr[l][0] : a[iLo][0];
+                    if (iHi > l) {
+                        if (iHi >= k + (2 * j) || iHi >= arr.length || loval <= arr[iHi][0]) {
+                            if (iLo >= a.length) continue;
+                            a.push(arr[l]);
+                            arr[l] = a[iLo];
+                            iLo += 1;
+                            continue
+                        }
+                    }
+                    a.push(arr[l]);
+                    arr[l] = arr[iHi];
+                    iHi += 1;
+                }
+            }
+        }
+        return arr;
+    }
+}
