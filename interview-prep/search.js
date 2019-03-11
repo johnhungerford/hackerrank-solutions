@@ -431,3 +431,176 @@ function minTime(machines, goal) {
         return arr;
     }
 }
+
+/**
+ * Finds the maximum value that can be produced by adding all elements of any subarray of a given
+ * array of positive integers and taking the remainder when that sum is divided by a given number.
+ * In other words, find max sum[i,j] % m, where sum[i,j] is the sum of all elements from i to j. 
+ * This algorithm uses the fact that sum[i,j] = sumall[j] - sumall[i-1], where sumall[x] is the sum
+ * of all elements from index 0 to index x. It generates a sorted list (binary search tree) of these
+ * "prefix sums" (sumall[x]) over the whole input array, and it greedily finds the maximum difference
+ * by checking each one against the next greatest, because a modulo result minus itself brings you to
+ * zero, and the *less* you subtract in *addition* to that, the higher the resulting modulo result is.
+ *    *fails the three highest-n tests* (n being a.length) I think this is because of javascript...
+ * @param   {array}    a  Array of positive integers
+ * @param   {integer}  m  Integer that sums of {a} subarrays will be taken modulo of
+ * @returns {integer}     Maximum modulo of m of all subarrays of a
+ */
+function maximumSum(a, m) {
+    // Component nodes class of binary search tree
+    class BinarySearchNode {
+        constructor(k, v, p) {
+            this.k = k === undefined ? null : k;
+            this.v = v === undefined ? null : [v];
+            this.p = p instanceof BinarySearchNode ? p : null;
+            this.l = null;
+            this.r = null;
+        }
+    
+        add(k, v) {
+            let ptr = this;
+            while (true) {
+                if (k === ptr.k) {
+                    ptr.v.push(v);
+                    return ptr;
+                }
+    
+                if (k < ptr.k) {
+                    if (ptr.l !== null) {
+                        ptr = ptr.l;
+                        continue;
+                    }
+    
+                    const p = ptr.getPrev();
+                    if (p === null || k > p.k) {
+                        ptr.l = new BinarySearchNode(k, v, ptr);
+                        return ptr.l;
+                    } 
+    
+                    ptr = p;
+                }
+    
+                if (k > ptr.k) {
+                    if (ptr.r !== null) {
+                        ptr = ptr.r;
+                        continue;
+                    }
+    
+                    const n = ptr.getNext();
+                    if (n === null || k < n.k) {
+                        ptr.r = new BinarySearchNode(k, v, ptr);
+                        return ptr.r;
+                    }
+    
+                    ptr = n;
+                }
+            }
+        }
+    
+        getNext() {
+            let ptr = this;
+            if (ptr.r !== null) {
+                ptr = ptr.r;
+                while (ptr.l !== null) ptr = ptr.l;
+                return ptr;
+            }
+    
+            while (ptr !== null && ptr.k <= this.k) ptr = ptr.p;
+            return ptr;
+        }
+    
+        getPrev() {
+            let ptr = this;
+            if (ptr.l !== null) {
+                ptr = ptr.l;
+                while (ptr.r !== null) ptr = ptr.r;
+                return ptr;
+            }
+    
+            while (ptr !== null && ptr.k >= this.k) ptr = ptr.p;
+            return ptr;
+        }
+    
+        find(k) {
+            if (k === this.k) return this;
+            if (k > this.k) return this.r === null ? null : this.r.find(k);
+            if (k < this.k) return this.l === null ? null : this.l.find(k);
+            return null;
+        }
+    }
+    
+    // binary search tree class using above binary seach node class
+    class BinarySearchTree {
+        constructor(k, v) {
+            if (v !== undefined) {
+                this.root = new BinarySearchNode(k, v, null);
+            } else if (k === undefined) {
+                this.root = null;
+            } else {
+                this.root = new BinarySearchNode(k, null, null);
+            }
+        }
+    
+        add(k, v) {
+            if (this.root === null) {
+                root = new BinarySearchNode(k, v, null);
+                return root;
+            }
+    
+            return this.root.add(k, v);
+        }
+    
+        find(k) {
+            return this.root === null ? null : this.root.find(k);
+        }
+    
+        first() {
+            if (this.root === null) return null;
+            let ptr = this.root;
+            while (ptr.l !== null) ptr = ptr.l;
+            return ptr;
+        }
+    
+        last() {
+            if (this.root === null) return null;
+            let ptr = this.root;
+            while (ptr.r !== null) ptr = ptr.r;
+            return ptr;
+        }
+    
+        index(i) {
+            let ptr = this.first();
+            if (ptr === null) return null;
+            let ctr = 0;
+            while (ptr !== null) {
+                if (ctr === i) return ptr;
+                ptr = ptr.getNext();
+                ctr += 1;
+            }
+    
+            return null;
+        }
+    }
+
+    // Main algorithm: fills a binary search tree with "prefix sums" of a[i] taken % m; checks
+    // a[i] % m for max, checks prefix sums for max, and checks prefix sums minus the next greatest
+    // already calculated prefix sum (which means i < j, where sumall[j] - sumall[i]) for max.
+    const pa = new BinarySearchTree(0, 0);
+    let out = 0;
+    let prev = pa.root;
+    for (let i = 0; i < a.length; i++) {
+        if (out === m - 1) return m - 1; // since m - 1 is maximum possible, we can quit if we reach it
+        a[i] = a[i] % m;
+        if (a[i] > out) out = a[i];
+        const curr = pa.add((prev.k + a[i]) % m, i);
+        if (curr.k > out) out = curr.k;
+        const next = curr.getNext();
+        if (next != null) {
+            if ((curr.k - next.k + m) % m > out) out = (curr.k - next.k + m) % m;
+        }
+
+        prev = curr;
+    }
+
+    return out;
+}
