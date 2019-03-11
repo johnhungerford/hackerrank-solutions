@@ -336,14 +336,30 @@ function triplets(a, b, c) {
     }
 }
 
+/**
+ * Finds the number of days required to produce a given number of items using an array of machines,
+ * each of which takes a certain number of days to produce one item. This algorithm has function
+ * that calculates the number of items after a given day, and uses a binary search to find the
+ * earliest day on which the given number of items is produced
+ * @param {array}   machines   An array of integers describing how many days it takes each machine
+ *                             to produce one item. Can contain duplicates.
+ * @param {integer} goal       How many items to be produced
+ * @returns {integer}          The minimum number of days that {machines} take to produce {goal} items
+ */
 function minTime(machines, goal) {
+    // Get frequency map of machines. We can calculate how many items are produced after a given number
+    // of days by multiplying the number that one machine produces by its frequency.
     let map = {};
     for (let i = 0; i < machines.length; i++)
         map[machines[i]] = map.hasOwnProperty(machines[i]) ? map[machines[i]] + 1 : 1; 
 
+    // Turn the above frequency map into a sorted array
     let amap = [];
     for (let k in map) amap.push([k, map[k]]);
     amap = sort(amap);
+
+    // Remove all the machines that will not contribute to the goal (will take longer to produce one
+    // item than it takes the quickest machine to produce all the items)
     let max = goal * amap[0][0] * amap[0][1];
     for (let i = amap.length - 1; i < 0; i--) {
         if (amap[i][0] >= max) {
@@ -353,8 +369,12 @@ function minTime(machines, goal) {
         }
     }
     
+    // Find the earliest day on which {goal} items are produced. Upper bound is the number of days
+    // it takes for the quickest machine to reach the goal by itself.
     let d = binarySearch(goal, 1, max, getProducts);
     return d;
+
+    // Function to calculate the number produces produced by the end of a given day x
     function getProducts(x) {
         let p = 0;
         for (let i in amap) p += amap[i][1] * Math.floor(x / parseInt(amap[i][0]));
@@ -382,6 +402,7 @@ function minTime(machines, goal) {
         return miv < n ? binarySearch(n, mi, hi, fn) : binarySearch(n, lo, mi, fn);
     }
 
+    // Merge sort algorithm
     function sort(arr) {
         if (arr.length === 1) return arr;
         let n, a;
