@@ -448,53 +448,139 @@ function minTime(machines, goal) {
  */
 function maximumSum(a, m) {
     // Component nodes class of binary search tree
-    class BinarySearchNode {
-        constructor(k, v, p) {
+    class RedBlackNode {
+        constructor(k, v, red, p, cmp) {
             this.k = k === undefined ? null : k;
             this.v = v === undefined ? null : [v];
-            this.p = p instanceof BinarySearchNode ? p : null;
+            this.red = (red === true || red === false) ? red : null;
+            this.p = p instanceof RedBlackNode ? p : null;
+            this.cmp = cmp instanceof Function ? cmp : (a, b) => { return a > b ? 1 : a < b ? -1 : 0; };
             this.l = null;
             this.r = null;
         }
     
+        // Insertion relative to this (i.e., ignores parents)
         add(k, v) {
             let ptr = this;
             while (true) {
-                if (k === ptr.k) {
+                if (this.cmp(k, ptr.k) === 0) {
                     ptr.v.push(v);
                     return ptr;
                 }
     
-                if (k < ptr.k) {
+                if (this.cmp(k, ptr.k) === -1) {
                     if (ptr.l !== null) {
                         ptr = ptr.l;
                         continue;
                     }
     
-                    const p = ptr.getPrev();
-                    if (p === null || k > p.k) {
-                        ptr.l = new BinarySearchNode(k, v, ptr);
-                        return ptr.l;
-                    } 
     
-                    ptr = p;
+                    ptr.l = new RedBlackNode(k, v, true, ptr);
+                    ptr = ptr.l;
+                    ptr.balance();
+                    return ptr;
                 }
     
-                if (k > ptr.k) {
+                if (this.cmp(k, ptr.k) === 1) {
                     if (ptr.r !== null) {
                         ptr = ptr.r;
                         continue;
                     }
     
-                    const n = ptr.getNext();
-                    if (n === null || k < n.k) {
-                        ptr.r = new BinarySearchNode(k, v, ptr);
-                        return ptr.r;
-                    }
-    
-                    ptr = n;
+                    ptr.r = new RedBlackNode(k, v, true, ptr);
+                    ptr = ptr.r;
+                    ptr.balance();
+                    return ptr;
                 }
             }
+        }
+    
+        balance() {
+            let ptr = this;
+            while (ptr !== null) {
+                if (!ptr.red) break;
+                if (ptr.p === null) {
+                    ptr.red = false;
+                    break;
+                }
+    
+                if (!ptr.p.red) break;
+    
+                if (ptr.p.p === null) {
+                    ptr.p.red = false;
+                    break;
+                }
+    
+                if ((ptr.p.p.l === ptr.p && (ptr.p.p.r === null || !ptr.p.p.r.red)) || (ptr.p.p.r === ptr.p && (ptr.p.p.l === null || !ptr.p.p.l.red))) {
+                    ptr.restruct();
+                    break;
+                } else {
+                    ptr.p.red = false;
+                    ptr.p.p.r.red = false;
+                    ptr.p.p.red = true;
+                }
+    
+                ptr = ptr.p.p;
+            }
+        }
+    
+        restruct() {
+            let rootParent = this.p.p.p;
+            let newRoot, newChildRight, newChildLeft;
+    
+            // Right rotation
+            if (this === this.p.l && this.p === this.p.p.l) {
+                newRoot = this.p;
+                newChildRight = this.p.p;
+                newChildLeft = this;
+                newChildRight.l = newRoot.r;
+                if (newChildRight.l !== null) newChildRight.l.p = newChildRight;
+            }
+    
+            // Left-Right Rotation
+            if (this === this.p.r && this.p === this.p.p.l) {
+                newRoot = this;
+                newChildRight = this.p.p;
+                newChildLeft = this.p;
+                newChildRight.l = newRoot.r;
+                if (newChildRight.l !== null) newChildRight.l.p = newChildRight;
+                newChildLeft.r = newRoot.l;
+                if (newChildLeft.r !== null) newChildLeft.r.p = newChildLeft;
+            }
+    
+            // Left Rotation
+            if (this === this.p.r && this.p === this.p.p.r) {
+                newRoot = this.p;
+                newChildLeft = this.p.p;
+                newChildRight = this;
+                newChildLeft.r = newRoot.l;
+                if (newChildLeft.r !== null) newChildLeft.r.p = newChildLeft;
+            }
+    
+            // Right-Left Rotation
+            if (this === this.p.l && this.p === this.p.p.r) {
+                newRoot = this;
+                newChildLeft = this.p.p;
+                newChildRight = this.p;
+                newChildRight.l = newRoot.r;
+                if (newChildRight.l !== null) newChildRight.l.p = newChildRight;
+                newChildLeft.r = newRoot.l;
+                if (newChildLeft.r !== null) newChildLeft.r.p = newChildLeft;
+            }
+    
+            if (rootParent !== null) {
+                if (rootParent.l === this.p.p) rootParent.l = newRoot;
+                if (rootParent.r === this.p.p) rootParent.r = newRoot;
+            }
+            newRoot.p = rootParent;
+    
+            newRoot.r = newChildRight;
+            newRoot.l = newChildLeft;
+            newChildRight.p = newRoot;
+            newChildLeft.p = newRoot;
+            newChildRight.red = true;
+            newChildLeft.red = true;
+            newRoot.red = false;
         }
     
         getNext() {
@@ -505,7 +591,7 @@ function maximumSum(a, m) {
                 return ptr;
             }
     
-            while (ptr !== null && ptr.k <= this.k) ptr = ptr.p;
+            while (ptr !== null && this.cmp(ptr.k, this.k) !== 1) ptr = ptr.p;
             return ptr;
         }
     
@@ -517,37 +603,57 @@ function maximumSum(a, m) {
                 return ptr;
             }
     
-            while (ptr !== null && ptr.k >= this.k) ptr = ptr.p;
+            while (ptr !== null && this.cmp(ptr.k, this.k) !== -1) ptr = ptr.p;
             return ptr;
         }
     
+        // Finds k relative to {this} (i.e., ignores parents)
         find(k) {
-            if (k === this.k) return this;
-            if (k > this.k) return this.r === null ? null : this.r.find(k);
-            if (k < this.k) return this.l === null ? null : this.l.find(k);
-            return null;
+            let ptr = this;
+            while (ptr !== null) {
+                if (this.cmp(k, ptr.k) === 0) return ptr;
+                if (this.cmp(k, ptr.k) === 1) ptr = ptr.r;
+                if (this.cmp(k, ptr.k) === -1) ptr = ptr.l;
+            }
+            return ptr;
         }
     }
     
     // binary search tree class using above binary seach node class
-    class BinarySearchTree {
-        constructor(k, v) {
-            if (v !== undefined) {
-                this.root = new BinarySearchNode(k, v, null);
-            } else if (k === undefined) {
-                this.root = null;
+    class RedBlackMap {
+        constructor(k, v, cmp) {
+            this.map = {};
+            if (cmp instanceof Function) {
+                this.root = new RedBlackNode(k, v, false, cmp);
+                this.map[root.k] = this.root;
+            } else if (v !== undefined) {
+                this.root = new RedBlackNode(k, v, false, null);
+                this.map[root.k] = this.root;
+            } else if (k !== undefined) {
+                this.root = new RedBlackNode(k, null, false, null);
+                this.map[root.k] = this.root;
             } else {
-                this.root = new BinarySearchNode(k, null, null);
+                this.root = null;
             }
         }
     
         add(k, v) {
             if (this.root === null) {
-                root = new BinarySearchNode(k, v, null);
-                return root;
+                this.root = new RedBlackNode(k, v, false, null);
+                this.map[root.k] = this.root;
+                return this.root;
             }
     
-            return this.root.add(k, v);
+            let ptr = this.root.add(k, v);
+            if (this.root.p !== null) this.findRoot();
+            this.map[k] = ptr;
+            return ptr;
+        }
+    
+        findRoot() {
+            let ptr = this.root;
+            while (ptr.p !== null) ptr = ptr.p;
+            this.root = ptr;
         }
     
         find(k) {
@@ -580,19 +686,58 @@ function maximumSum(a, m) {
     
             return null;
         }
+    
+        array() {
+            let ptr = this.index(0);
+            const out = [];
+            while (ptr != null) {
+                out.push([ptr.k, ptr.red]);
+                ptr = ptr.getNext();
+            }
+    
+            return out;
+        }
+    
+        tree() {
+            let oldarr = [this.root];
+            let newarr = [];
+            console.log(this.root.k);
+            while (true) {
+                newarr = [];
+                for (let k = 0; k < oldarr.length; k++) {
+                    if (!(oldarr[k].l instanceof RedBlackNode)) {
+                        process.stdout.write(`null, `);
+                    } else {
+                        newarr.push(oldarr[k].l);
+                        process.stdout.write(`${oldarr[k].l.k}, `);
+                    }
+    
+                    process.stdout.write(`(${oldarr[k].k}), `);
+                    if (!(oldarr[k].r instanceof RedBlackNode)) {
+                        process.stdout.write(`null   `);
+                    } else {
+                        newarr.push(oldarr[k].r);
+                        process.stdout.write(`${oldarr[k].r.k}   `);
+                    }
+                }
+                process.stdout.write('\n');
+                if (newarr.length === 0) break;
+                oldarr = newarr;
+            }
+        }
     }
 
     // Main algorithm: fills a binary search tree with "prefix sums" of a[i] taken % m; checks
     // a[i] % m for max, checks prefix sums for max, and checks prefix sums minus the next greatest
     // already calculated prefix sum (which means i < j, where sumall[j] - sumall[i]) for max.
-    const pa = new BinarySearchTree(0, 0);
+    const pa = new RedBlackMap(0, 0);
     let out = 0;
     let prev = pa.root;
     for (let i = 0; i < a.length; i++) {
-        if (out === m - 1) return m - 1; // since m - 1 is maximum possible, we can quit if we reach it
         a[i] = a[i] % m;
         if (a[i] > out) out = a[i];
         const curr = pa.add((prev.k + a[i]) % m, i);
+
         if (curr.k > out) out = curr.k;
         const next = curr.getNext();
         if (next != null) {
