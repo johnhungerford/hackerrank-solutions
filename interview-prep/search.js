@@ -749,3 +749,96 @@ function maximumSum(a, m) {
 
     return out;
 }
+
+/**
+ * Same as above, but doesn't use a binary tree. Instead, just fills up an array with prefix
+ * sums, and sorts it after the fact. Requires two passes, but node.js's built-in Array.sort()
+ * method is way faster than my own merge sort (original attempt) or the above binary search
+ * tree insert() and getNext() methods.
+ *   *Passes all tests!!*
+ * @param   {array}    a  Array of positive integers
+ * @param   {integer}  m  Integer that sums of {a} subarrays will be taken modulo of
+ * @returns {integer}     Maximum modulo of m of all subarrays of a
+ */
+function maximumSum(a, m) {
+    const pa = [{id: -1, val: 0}];
+    let out = 0;
+    for (let i = 0; i < a.length; i++) {
+        if (out === m - 1) return out;
+        const ai = a[i] % m;
+        if (ai > out) out = ai;
+        const prefix = (ai + pa[i].val) % m;
+        if (prefix > out) out = prefix;
+        pa.push({ id: i, val: prefix });
+    }
+
+    pa.sort((a, b) => a.val - b.val);
+    for (let i = 0; i < pa.length - 1; i++) {
+        if (pa[i].id > pa[i + 1].id) {
+            const diff = (pa[i].val - pa[i + 1].val + m) % m;
+            if (diff > out) out = diff;
+        }
+    }
+
+    return out;
+}
+
+/**
+ * Calculates what the minimum number of passes are needed for m machines and w workers to
+ * produce at least n products, where the number of products produced in one pass is m * w
+ * and more machines *or* workers can be bought after each pass at a price of p products per
+ * machine *or* worker (they have the same price).
+ * Uses the following principles:
+ *      1) keeps m and w as close to each other as possible
+ *      2) either buys as many machines/workers as possible or none
+ *      3) decides whether to buy based on whether the new rate of production would by itself 
+ *         lead to an earlier or equal end date (taking into account loss of products)
+ *      4) tracks maximum number of passes (given current rate), and returns that if you
+ *         can afford to buy more but doing so increases the maximum number of passes (given
+ *         the new rate and the loss of products).
+ * @param {number} mstart The number of machines at the beginning
+ * @param {number} wstart The number of workers at the beginning
+ * @param {number} p      The price per machine or worker
+ * @param {number} nmin   The minimum number of products needed
+ * @returns {number} The number of passes to reach or exceed target nmin
+ */
+function minimumPasses(mstart, wstart, p, nmin) {
+    let passes = 0;
+    let m = mstart, w = wstart, n = 0;
+    let maxp = Math.ceil(nmin / (m * w));
+
+    while (true) {
+        const mw = m * w;
+        n = n + mw;
+        passes += 1;
+        if (n >= nmin) return passes;
+        if (n < p) {
+            const diffpass = Math.ceil((p - n) / mw);
+            if (passes + diffpass >= maxp) return maxp;
+            n += mw * diffpass;
+            passes += diffpass;
+        }
+
+        const small = m < w ? m : w;
+        const large = w > m ? w : m;
+        const add = Math.floor(n / p);
+        let largeadd = 0;
+        let smalladd = 0;
+        const diff = large - small;
+        if (diff >= add) smalladd = add;
+        if (diff < add) {
+            smalladd = diff + Math.floor((add - diff) / 2);
+            largeadd = Math.ceil((add - diff) / 2);
+        }
+
+        let res = passes + Math.ceil((nmin + (p * add) - n) / ((small + smalladd) * (large + largeadd)));
+        if (res <= maxp) {
+            m = small + smalladd;
+            w = large + largeadd;
+            n = n - (add * p);
+            maxp = res;
+        } else {
+            return maxp;
+        }
+    }
+}
