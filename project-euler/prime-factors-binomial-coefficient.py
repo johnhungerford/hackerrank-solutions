@@ -123,6 +123,7 @@ def get_binomial_primes(N, M):
             else:
                 del pr_dict[j]
     
+    print(pr_dict)
     return pr_dict
     
 if __name__ == '__main__':
@@ -134,4 +135,3 @@ if __name__ == '__main__':
     p = get_binomial_primes(N, M)
     for k in range(1, K + 1):
         print(get_sum(p, k))
-
