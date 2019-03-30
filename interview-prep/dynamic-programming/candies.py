@@ -21,4 +21,3 @@ def candies(n, arr):
         res += i
         
     return res
-
