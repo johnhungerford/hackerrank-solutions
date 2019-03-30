@@ -10,30 +10,34 @@ def getM(x):
     
     return i - 1
 
+def getGs(decin):
+    if decin < len(gs):
+        return gs[decin][M[decin]]
+    
+    for dec in range(len(gs), decin + 1):
+        M.append(getM(dec))
+        gs.append([])
+        if dec > 9:
+            gs[dec].append(0)
+        else:
+            gs[dec].append(1)
+        
+        for i in range(1,M[dec] + 1):            
+            sum = 0
+            for decInt in range(0, 10):
+                j = dec - decInt * (2 ** i)
+                if j < 0:
+                    break
+                sum += gs[j][i - 1] if i - 1 < len(gs[j]) else gs[j][M[j]]
+            gs[dec].append(sum)
+    
+    return gs[decin][M[decin]]
 
 def getDecAndInd(x):
-    global gs
-    global M
     dec = 0
     ctr = 0
-
     while ctr < x: 
-        if dec >= len(gs):
-            M.append(getM(dec))
-            gs.append([])
-            if dec >= 10:
-                gs[dec].append(0)
-            else:
-                gs[dec].append(1)
-
-            for i in range(1,M[dec] + 1):
-                sum = 0
-                for j in range(dec, -1, 0 - 2 ** i):
-                    sum += gs[j][i - 1] if i - 1 < len(gs[j]) else gs[j][M[j]]
-
-                gs[dec].append(sum)
-
-        ctr += gs[dec][M[dec]]
+        ctr += getGs(dec)
         dec += 1
 
     return [dec - 1, x + gs[dec - 1][M[dec - 1]] - ctr - 1]
@@ -75,33 +79,48 @@ def getNextDecBin(decBin, dir = 1):
                 if i == 0:
                     return decBin
 
-                while decBin[i] >= 1 and decBin[i - 1] < 8:
+                brk = False
+                while not brk:
+                    brk = True
                     for j in range(i, 0, -1):
-                        if decBin[j] < 1 or decBin[j - 1] >= 8:
-                            break
+                        if decBin[j] == 0:
+                            continue
+                        
+                        for k in range(j - 1, j - 4, -1):
+                            if k < 0:
+                                break
+                            
+                            if decBin[k] == 9:
+                                continue
 
-                        while decBin[j] >= 1 and decBin[j - 1] < 8:
-                            decBin[j] -= 1
-                            decBin[j - 1] += 2
+                            while decBin[j] > 0 and decBin[k] + (2 ** (j - k)) <= 9:
+                                brk = False
+                                decBin[j] -= 1
+                                decBin[k] += (2 ** (j - k))
 
                 return decBin
     
     if dir == -1:
-        for i in range(0, len(decBin)):
-            if i + 1 >= len(decBin):
-                return -1
-
-            if decBin[i] < 8 and decBin[i+1] >= 1:
+        for i in range(0, len(decBin) - 1):
+            if decBin[i] < 8 and decBin[i + 1] >= 1:
                 decBin[i] += 2
                 decBin[i+1] -= 1
-                while decBin[i] < 9 and decBin[i - 1] >= 2:
-                    for j in range(i, 0, -1):
-                        if decBin[j] >= 9 or decBin[j - 1] < 2:
-                            break
 
-                        while decBin[j] < 9 and decBin[j - 1] >= 2:
-                            decBin[j] += 1 
-                            decBin[j - 1] -= 2
+                brk = False
+                while not brk:
+                    brk = True
+                    for j in range(i, 0, -1):
+                        if decBin[j] == 9:
+                            continue
+                        
+                        for k in range(j - 1, j - 3, -1):
+                            if j <= 0:
+                                break
+
+                            while decBin[j] < 9 and decBin[k] - (2 ** (j - k)) >= 0:
+                                brk = False
+                                decBin[j] += 1
+                                decBin[k] -= (2 ** (j - k))
 
                 return decBin
     
@@ -152,9 +171,7 @@ def getBottomDecBin(dec):
 
 def getDecBin(dec, ind):
     if dec >= len(gs):
-        i = 0
-        while getDecAndInd(i)[0] < dec:
-            i += 4
+        getGs(dec)
 
     numDecBins = gs[dec][M[dec]]
     if ind > numDecBins // 2:
@@ -163,7 +180,6 @@ def getDecBin(dec, ind):
         while ctr != ind:
             decBin = getNextDecBin(decBin, -1)
             ctr -= 1
-        print('tst')
         return getDecBinStr(decBin)
     else:
         decBin = getBottomDecBin(dec)
@@ -188,6 +204,20 @@ def test_getM():
     assert getM(8) == 3
     assert getM(15) == 3
     assert getM(16) == 4
+    assert getM(50) == 5
+
+def test_getGs():
+    assert getGs(0) == 1
+    assert getGs(1) == 1
+    assert getGs(2) == 2
+    assert gs[2] == [1, 2]
+    assert getGs(4) == 4
+    assert gs[3] == [1, 2]
+    assert gs[4] == [1, 3, 4]
+    assert getGs(10) == 13
+    assert gs[10] == [0, 5, 11, 13]
+    assert getGs(50) == 277
+    assert gs[50] == [0, 0, 14, 121, 241, 277]
 
 def test_getDecAndInd():
     assert getDecAndInd(1) == [0, 0]
@@ -215,12 +245,6 @@ def test_getDecBin():
     assert getDecBin(4, 2) == '20'
     assert getDecBin(6, 5) == '110'
 
-def test_decibinaryNumbers():
-    assert decibinaryNumbers(29) == '24'
-    assert decibinaryNumbers(5) == '3'
-    # assert decibinaryNumbers(7839) == '21148'
-    assert decibinaryNumbers(9948517) == '998888'
-
 def test_getDecBinStr():
     assert getDecBinStr([0,0,0,1,0,0,0,0]) == '1000'
     assert getDecBinStr([3,5,0,7,4,8,3,7,9,2]) == '2973847053'
@@ -240,14 +264,14 @@ def test_getNextDecBin():
     assert getNextDecBin([4], -1) == -1
 
 def test_getTopDecBin():
-    assert getTopDecBin(0) == [0]
-    assert getTopDecBin(1) == [1]
-    assert getTopDecBin(2) == [0, 1]
-    assert getTopDecBin(3) == [1, 1]
-    assert getTopDecBin(4) == [0, 0, 1]
-    assert getTopDecBin(9) == [1, 0, 0, 1]
-    assert getTopDecBin(25) == [1, 0, 0, 1, 1]
-    assert getTopDecBin(50) == [0, 1, 0, 0, 1, 1]
+    assert getDecBinStr(getTopDecBin(0)) == '0'
+    assert getDecBinStr(getTopDecBin(1)) == '1'
+    assert getDecBinStr(getTopDecBin(2)) == '10'
+    assert getDecBinStr(getTopDecBin(3)) == '11'
+    assert getDecBinStr(getTopDecBin(4)) == '100'
+    assert getDecBinStr(getTopDecBin(9)) == '1001'
+    assert getDecBinStr(getTopDecBin(25)) == '11001'
+    assert getDecBinStr(getTopDecBin(50)) == '110010'
 
 def test_getBottomDecBin():
     assert getBottomDecBin(0) == [0]
@@ -259,4 +283,69 @@ def test_getBottomDecBin():
     assert getBottomDecBin(25) == [9, 8]
     assert getBottomDecBin(50) == [8, 9, 6]
 
-decibinaryNumbers(9948517)
+def test_decibinaryNumbers():
+    assert decibinaryNumbers(29) == '24'
+    assert decibinaryNumbers(5) == '3'
+    assert decibinaryNumbers(637) == '1138'
+    assert decibinaryNumbers(7839) == '21148'
+    assert decibinaryNumbers(9948517) == '998888'
+
+decBinsUp = []
+dec, ind = getDecAndInd(637)
+decBin = getBottomDecBin(dec)
+while decBin != -1:
+    decBinsUp.append(decBin.copy())
+    decBin = getNextDecBin(decBin, 1)
+
+decBin = getTopDecBin(dec)
+print(f'decBin: {decBin}')
+print(f'last decBin on way up: {decBinsUp[-1]}')
+for i in range(len(decBinsUp) - 1, -1, -1):
+    if decBin != decBinsUp[i]:
+        print('NOT EQUAL!!')
+    print(f'decBin on way down: {decBin}')
+    print(f'decBin from way up: {decBinsUp[i]}')
+    decBin = getNextDecBin(decBin, -1)
+
+# oldDecBin = []
+# dec, ind = getDecAndInd(637)
+# print(f'dec: {dec}, ind: {ind}')
+# print(f'result: {decibinaryNumbers(7839)}')
+# decBin = getBottomDecBin(dec)
+# i = -1
+# length = 3
+# while decBin != -1:
+#     i += 1
+#     print(f'{i}:\t{decBin}')
+#     if len(decBin) > length:
+#         print(f'up a level, i = {i}')
+#         length += 1
+#     oldDecBin = decBin
+#     decBin = getNextDecBin(decBin)
+
+# print(f'i = {i}')
+
+# decBin = oldDecBin
+# while decBin != -1:
+#     print(decBin)
+#     if len(decBin) < length:
+#         print(f'down a level, i = {i}')
+#         length -= 1
+#     oldDecBin = decBin
+#     decBin = getNextDecBin(decBin, -1)
+#     i -= 1  
+
+# print(f'i = {i}')
+
+# decBin = [8,1]
+# i = 1
+# length = 2
+# while decBin != -1:
+#     print(decBin)
+#     if len(decBin) > length:
+#         print(f'up a level, i = {i}')
+#         length += 1
+#     decBin = getNextDecBin(decBin)
+#     i += 1
+
+# print(f'i = {i}')
