@@ -1,3 +1,5 @@
+// https://www.hackerrank.com/challenges/down-to-zero-ii/problem
+
 var minArr: Array[Int] = Array.fill(1000001) { -1 }
 minArr(0) = 0; minArr(1) = 1; minArr(2) = 2
 
